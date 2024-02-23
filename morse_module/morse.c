@@ -7,7 +7,7 @@
 #include "hardware/i2c.h"
 #include "blinker.c"
 #include "module_data.c"
-#include "lcd_1602_i2c.c"
+#include "../ktane-globals/lcd_1602_i2c.c"
 #include "../ktane-globals/def.h"
 
 #define MODULE_I2C i2c0
@@ -77,11 +77,11 @@ static void gpio_handler(uint gpio, uint32_t events) {
 		return;
 	switch(gpio) {
 		case FREQ_DEC:
-			// printf("button has been pressed for freq dec\n");
+			printf("button has been pressed for freq dec\n");
 			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
 			break;
 		case FREQ_INC:
-			// printf("button has been pressed for freq inc\n");
+			printf("button has been pressed for freq inc\n");
 			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
 			break;
 		case TX:
@@ -104,11 +104,16 @@ static void setup_module_data() {
 	printf("Seed is: %x\nCorrect is: %x\nStart is: %x\n",seed_data, correct_index, starting_index);
 }
 
-void display_freq() {
+void display_freq(uint8_t index) {
+	printf("Displying the freq\n");
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
 	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, "----------------");
-	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, starting_index);
+	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, index);
 	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, "|");
+	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 1, 0);
+	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, "    3.000 MHz   ");
+	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 1, 6);
+	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, freqs[index]);
 }
 
 static void do_blink(){
@@ -163,16 +168,16 @@ int main() {
 
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
-	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, "Hello");
 
 	setup_module_data();
 	multicore_launch_core1(do_blink);
 	uint8_t current_index = starting_index;
+	display_freq(starting_index);
 	while(state != SUCCEEDED && !lose_flag){
 		//printf("current: %x\nstarting: %x", current_index, starting_index);
 		//sleep_ms(500);
 		if(starting_index != current_index){ // If the freq was changed, update on the serial monitor
-			print_freq(starting_index);
+			display_freq(starting_index);
 			current_index = starting_index;
 		}
 		if(fail_flag) { // If there was a FAIL, hold the LED red for a bit and then go back to normal.
