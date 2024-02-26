@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <PicoTM1637.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "pico/rand.h"
@@ -18,10 +19,13 @@
 #define MODULE_SDA  16
 #define MODULE_SCL  17
 
-#define MAX_MODULE_COUNT 16
-#define BUZZER_TIMER_PITCH 160000
+#define CLK_PIN 24
+#define DIO_PIN 25
 
-const uint LED_PIN = 25;
+#define MAX_MODULE_COUNT 16
+#define BUZZER_TIMER_PITCH 50000
+
+const uint LED_PIN = 13;
 const uint FIRST_FAIL = 26;
 const uint SECOND_FAIL = 27;
 const uint START_BUTTON = 2;
@@ -35,10 +39,11 @@ static bool done = 0;
 static uint8_t init_data;
 static uint8_t rxdata = 0;
 
-static uint16_t game_timer;
+static int16_t game_timer;
 static struct repeating_timer game_timer_timer;
 static uint8_t  fails = 0;
 
+static char fire = false;
 
 static enum master_states {
 	NOT_READY,
@@ -54,24 +59,19 @@ void gpio_callback(uint gpio, uint32_t events) {
 	}
 }
 
-void show_clock() {
-	//TODO: implement this
-	printf("The remaining time is %d", game_timer);
-}
-
-void static inline make_beep() {
-    clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
-	sleep_ms(100);	
-    clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, 10);
+int64_t beep_callback(alarm_id_t id, void *user_data) {
+    clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, fire ? 10 : BUZZER_TIMER_PITCH);
+	gpio_put(LED_PIN, !fire);
+	fire = ~fire;
+	return fire ? -200000 : -800000;
 }
 
 bool clock_countdown_callback(struct repeating_timer *t) {
 	
+    TM1637_display_both(game_timer/60, game_timer % 60, true);
 	game_timer--;
-	show_clock();
-	make_beep();
 
-	return game_timer > 0;
+	return game_timer >= 0;
 }
 
 void setup_master() {
@@ -111,7 +111,7 @@ void setup_master() {
 
 	// TODO: read some pins to configure the amount of time that we start with
 
-	game_timer = 5 * 60; // set the amount of time for the game to be 5 mins
+	game_timer = 3 * 60; // set the amount of time for the game to be 5 mins
 
 	// TODO: read the hardcode input pin
 	gpio_set_irq_enabled_with_callback(START_BUTTON, GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
@@ -180,26 +180,36 @@ void loop() {
 int main() {
 	uint8_t txdata;
 	stdio_init_all(); // initalize stdio for printf
-	printf("This is the start\n");
-	sleep_ms(10000);
-
+	alarm_pool_init_default(); // Init the alarm pool
+	
 	setup_master(); // Do the setup for the master
-	populate_addresses();
-	if(module_count == 0){
-		gpio_put(LED_PIN, 1);	
-		while(1);
-	}
-	init_game();
-	start_game();
-	loop();
-	if(fails >= 3 || game_timer == 0) {
-		printf("KABOOM! the bomb has exploded and you are ash\n");
-		txdata = GAME_LOSS;
-		i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
-	}
-	else {
-		printf("Congratulations, you have defused the bomb!\n");
-	}
+	
+	TM1637_init(CLK_PIN, DIO_PIN);  
+    TM1637_clear(); 
+    TM1637_set_brightness(4); // max value, default is 0
+	
+	sleep_ms(5000);
+	
+	printf("Finished Waiting\n");
+    add_repeating_timer_ms(-1000, clock_countdown_callback, NULL, &game_timer_timer);
+	add_alarm_in_ms(1000, beep_callback, NULL, false);
+	// sleep_ms(10000);
+	// populate_addresses();
+	// if(module_count == 0){
+	// 	gpio_put(LED_PIN, 1);	
+	// 	while(1);
+	// }
+	// init_game();
+	// start_game();
+	// loop();
+	// if(fails >= 3 || game_timer == 0) {
+	// 	printf("KABOOM! the bomb has exploded and you are ash\n");
+	// 	txdata = GAME_LOSS;
+	// 	i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
+	// }
+	// else {
+	// 	printf("Congratulations, you have defused the bomb!\n");
+	// }
 
 	// master_state = READY_2_GO; // wait for user to push the start button to begin the game
 	// while(master_state == READY_2_GO);
