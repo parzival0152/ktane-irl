@@ -25,16 +25,17 @@
 #define MAX_MODULE_COUNT 16
 #define BUZZER_TIMER_PITCH 50000
 
-const uint LED_PIN = 13;
-const uint FIRST_FAIL = 26;
-const uint SECOND_FAIL = 27;
-const uint START_BUTTON = 2;
+const uint LED_PIN = 9;
+const uint FIRST_FAIL = 11;
+const uint SECOND_FAIL = 12;
+const uint START_BUTTON = 13;
 const uint BUZZER_PIN = 21;
 
 static uint8_t addresses[MAX_MODULE_COUNT] = {0};
 static uint8_t module_count = 0;
 
 static bool done = 0;
+static bool start = 0;
 
 static uint8_t init_data;
 static uint8_t rxdata = 0;
@@ -61,7 +62,6 @@ void gpio_callback(uint gpio, uint32_t events) {
 
 int64_t beep_callback(alarm_id_t id, void *user_data) {
     clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, fire ? 10 : BUZZER_TIMER_PITCH);
-	gpio_put(LED_PIN, !fire);
 	fire = ~fire;
 	return fire ? -200000 : -800000;
 }
@@ -147,12 +147,14 @@ void init_game() {
 			printf("Reading state from address: %x, it is %d\n", addresses[i], rxdata);
 		}
 	}
+	gpio_put(LED_PIN, 1);
 }
 
 void start_game() {
 	uint8_t txdata = START;
 	i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
     add_repeating_timer_ms(-1000, clock_countdown_callback, NULL, &game_timer_timer);
+	add_alarm_in_ms(1000, beep_callback, NULL, false);
 }
 
 void loop() {
@@ -191,28 +193,26 @@ int main() {
 	sleep_ms(5000);
 	
 	printf("Finished Waiting\n");
-    add_repeating_timer_ms(-1000, clock_countdown_callback, NULL, &game_timer_timer);
-	add_alarm_in_ms(1000, beep_callback, NULL, false);
-	// sleep_ms(10000);
-	// populate_addresses();
-	// if(module_count == 0){
-	// 	gpio_put(LED_PIN, 1);	
-	// 	while(1);
-	// }
-	// init_game();
-	// start_game();
-	// loop();
-	// if(fails >= 3 || game_timer == 0) {
-	// 	printf("KABOOM! the bomb has exploded and you are ash\n");
-	// 	txdata = GAME_LOSS;
-	// 	i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
-	// }
-	// else {
-	// 	printf("Congratulations, you have defused the bomb!\n");
-	// }
+	populate_addresses();
+	if(module_count == 0){
+		printf("Error: No modules detected!\n");
+		gpio_put(FIRST_FAIL, 1);	
+		while(1);
+	}
+	init_game();
+	master_state = READY_2_GO; // wait for user to push the start button to begin the game
+	while(master_state == READY_2_GO);
+	start_game();
+	loop();
+	if(fails >= 3 || game_timer == 0) {
+		printf("KABOOM! the bomb has exploded and you are ash\n");
+		txdata = GAME_LOSS;
+		i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
+	}
+	else {
+		printf("Congratulations, you have defused the bomb!\n");
+	}
 
-	// master_state = READY_2_GO; // wait for user to push the start button to begin the game
-	// while(master_state == READY_2_GO);
 	
 	printf("Game is Done!\n");
 	while(1); // loop forever
