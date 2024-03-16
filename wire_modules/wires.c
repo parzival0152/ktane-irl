@@ -38,7 +38,12 @@ static enum i2c_slave_responses state = SETTING_UP;
 static bool lose_flag = 0;
 
 uint8_t convert_index_to_real(uint8_t current_index) {
-	//TODO: implement this
+	for(int i = 0; i < 6;  i++) {
+		if(wires[i] != NO_COLOR){
+			if(current_index == 0) return i;
+			else current_index--;
+		}
+	}
 }
 
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
