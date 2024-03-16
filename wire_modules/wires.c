@@ -9,6 +9,7 @@
 #include "../ktane-globals/def.h"
 
 #define MODULE_I2C i2c0
+#define SAMPLE_COUNT 10
 
 const uint8_t SLAVE_SDA = 16;
 const uint8_t SLAVE_SCL = 17;
@@ -87,7 +88,13 @@ uint16_t read_from_index(uint index) {
 	// TODO: consider this function to taking multiple samples and returning the average
 	switch_adc_to_index(index);
 	sleep_ms(50);
-	return adc_read();
+	uint32_t read_buffer = 0;
+	for (int i = 0; i < SAMPLE_COUNT; i++) {
+		read_buffer += adc_read();
+		sleep_ms(15);
+	}
+	read_buffer /= SAMPLE_COUNT;
+	return read_buffer;
 }
 
 enum wire_color adc_to_color(uint16_t data) {
