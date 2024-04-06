@@ -19,15 +19,15 @@
 #define MODULE_SDA  16
 #define MODULE_SCL  17
 
-#define CLK_PIN 24
-#define DIO_PIN 25
+#define CLK_PIN 20
+#define DIO_PIN 19
 
 #define MAX_MODULE_COUNT 16
 #define BUZZER_TIMER_PITCH 50000
 
 const uint LED_PIN = 9;
-const uint FIRST_FAIL = 11;
-const uint SECOND_FAIL = 12;
+const uint FIRST_FAIL = 23;
+const uint SECOND_FAIL = 22;
 const uint START_BUTTON = 13;
 const uint BUZZER_PIN = 21;
 
@@ -63,6 +63,7 @@ void gpio_callback(uint gpio, uint32_t events) {
 int64_t beep_callback(alarm_id_t id, void *user_data) {
     clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, fire ? 10 : BUZZER_TIMER_PITCH);
 	fire = ~fire;
+	if(game_timer == 0) return 0;
 	return fire ? -200000 : -800000;
 }
 
@@ -191,6 +192,10 @@ int main() {
     TM1637_set_brightness(4); // max value, default is 0
 	
 	sleep_ms(5000);
+	printf("Starting\n");
+	gpio_put(FIRST_FAIL, 1);
+	gpio_put(SECOND_FAIL, 1);
+	start_game();
 	
 	printf("Finished Waiting\n");
 	populate_addresses();
@@ -200,8 +205,9 @@ int main() {
 		while(1);
 	}
 	init_game();
-	master_state = READY_2_GO; // wait for user to push the start button to begin the game
-	while(master_state == READY_2_GO);
+	// master_state = READY_2_GO; // wait for user to push the start button to begin the game
+	// while(master_state == READY_2_GO);
+	sleep_ms(1000);
 	start_game();
 	loop();
 	if(fails >= 3 || game_timer == 0) {

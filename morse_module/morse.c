@@ -5,6 +5,7 @@
 #include "pico/rand.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+#include "hardware/clocks.h"
 #include "blinker.c"
 #include "module_data.c"
 #include "../ktane-globals/lcd_1602_i2c.c"
@@ -12,19 +13,20 @@
 
 #define MODULE_I2C i2c0
 #define PERIPHERAL_I2C i2c1
+#define SCREEN_REFRESH_COUNT 75
 
 const uint MASTER_SDA = 14;
 const uint MASTER_SCL = 15;
 const uint SLAVE_SDA = 16;
 const uint SLAVE_SCL = 17;
 
-const uint FREQ_DEC = 10;
-const uint FREQ_INC = 11;
-const uint TX = 12;
+const uint FREQ_DEC = 20;
+const uint FREQ_INC = 18;
+const uint TX = 19;
 
 const uint8_t RED = 7;
-const uint8_t GREEN = 8;
-const uint8_t SIGNAL_LED = 9;
+const uint8_t GREEN = 6;
+const uint8_t SIGNAL_LED = 8;
 
 uint8_t data = 0;
 
@@ -35,9 +37,17 @@ static bool lose_flag = 0;
 static enum i2c_slave_responses state = READY_2_START;
 
 static uint8_t recv_data = 0;
+static uint8_t skip_press = 0;
 
 const uint I2C_SLAVE_ADDRESS = 0x18;
 const uint SCREEN_ADDR = 0x27;
+
+static struct repeating_timer button_refresh_timer_s;
+
+bool button_refresh_callback(struct repeating_timer *t) {
+	skip_press = 0;
+	return 1;
+}
 
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     switch (event) {
@@ -73,6 +83,10 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 }
 
 static void gpio_handler(uint gpio, uint32_t events) {
+	if(skip_press) {
+		return;
+	}
+	skip_press = 1;
 	if(!(events & GPIO_IRQ_EDGE_RISE))
 		return;
 	switch(gpio) {
@@ -105,7 +119,6 @@ static void setup_module_data() {
 }
 
 void display_freq(uint8_t index) {
-	printf("Displying the freq\n");
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
 	lcd_string(PERIPHERAL_I2C, SCREEN_ADDR, "----------------");
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, index);
@@ -122,9 +135,7 @@ static void do_blink(){
 	}
 }
 
-int main() {
-	stdio_init_all(); // initalize stdio for printf
-	
+static inline void setup_mcu() {
 	/**************************
 		GPIO init block
 	**************************/
@@ -135,6 +146,7 @@ int main() {
 	gpio_set_dir(GREEN, GPIO_OUT);	
 	gpio_init(SIGNAL_LED);
 	gpio_set_dir(SIGNAL_LED, GPIO_OUT);	
+	gpio_put(8, 1);
 	
 	// Setting up the i2c slave
 	gpio_init(SLAVE_SDA);
@@ -169,36 +181,50 @@ int main() {
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
 
+    add_repeating_timer_ms(250, button_refresh_callback, NULL, &button_refresh_timer_s);
+}
+
+int main() {
+	stdio_init_all(); // initalize stdio for printf
+	setup_mcu();
 	setup_module_data();
+
 	multicore_launch_core1(do_blink);
-	uint8_t current_index = starting_index;
 	display_freq(starting_index);
-	while(state != SUCCEEDED && !lose_flag){
-		//printf("current: %x\nstarting: %x", current_index, starting_index);
-		//sleep_ms(500);
-		if(starting_index != current_index){ // If the freq was changed, update on the serial monitor
+	uint8_t current_index = starting_index;
+	uint8_t refresh_counter = SCREEN_REFRESH_COUNT;
+	while(state != SUCCEEDED && !lose_flag){ // main module loop
+		skip_press = 0;
+		if(starting_index != current_index || refresh_counter == 0){
 			display_freq(starting_index);
 			current_index = starting_index;
+			refresh_counter = SCREEN_REFRESH_COUNT;
 		}
+		else {
+			refresh_counter--;
+		}
+
 		if(fail_flag) { // If there was a FAIL, hold the LED red for a bit and then go back to normal.
 			gpio_put(RED, 1);
 			sleep_ms(500);
 			gpio_put(RED, 0);
 			fail_flag = 0;
 		}
-		sleep_ms(50);
+		sleep_ms(25);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
 		printf("Waiting forever\n");
 		while(1) {
-			sleep_ms(50);
+			skip_press = 0;
+			sleep_ms(100);
 		}
 	}
 	if(lose_flag) {
 		gpio_put(RED, 1);
 		while(1) {
-			sleep_ms(50);
+			skip_press = 0;
+			sleep_ms(100);
 		}
 	
 	}

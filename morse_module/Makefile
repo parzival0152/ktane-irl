@@ -1,7 +1,7 @@
 compile:
 	cd build/ && make
 
-upload:
+upload: compile
 	sudo mount /dev/sda1 /mnt/pico
 	sudo cp build/*.uf2 /mnt/pico
 	sudo umount /mnt/pico
