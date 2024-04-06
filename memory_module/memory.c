@@ -77,8 +77,6 @@ int main() {
 	gpio_set_dir(RED, GPIO_OUT);	
 	gpio_init(GREEN);
 	gpio_set_dir(GREEN, GPIO_OUT);	
-	gpio_init(SIGNAL_LED);
-	gpio_set_dir(SIGNAL_LED, GPIO_OUT);	
 	
 	// Setting up the i2c slave
 	gpio_init(SLAVE_SDA);
@@ -92,9 +90,6 @@ int main() {
     i2c_slave_init(MODULE_I2C, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
 
 	setup_module_data();
-
-	uint8_t current_index = starting_index;
-	display_freq(starting_index);
 	
 	/**********************
 		main game loop
