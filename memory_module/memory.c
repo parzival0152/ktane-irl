@@ -9,13 +9,37 @@
 
 #define MODULE_I2C i2c0
 
+/***********************
+	GPIO declerations
+***********************/
+
 const uint MASTER_SDA = 14;
 const uint MASTER_SCL = 15;
 const uint SLAVE_SDA = 16;
 const uint SLAVE_SCL = 17;
 
-const uint8_t RED = 7;
-const uint8_t GREEN = 8;
+const uint8_t RED = 25;
+const uint8_t GREEN = 24;
+const uint8_t BUTTON_1 = 4;
+const uint8_t BUTTON_2 = 5;
+const uint8_t BUTTON_3 = 6;
+const uint8_t BUTTON_4 = 7;
+
+const uint8_t BAR_1 = 22;
+const uint8_t BAR_2 = 21;
+const uint8_t BAR_3 = 20;
+const uint8_t BAR_4 = 19;
+const uint8_t BAR_5 = 18;
+
+const uint8_t STORE_CLK 	= 13;
+const uint8_t SERIAL_CLK 	= 14;
+const uint8_t OE 			= 12;
+const uint8_t DATA_IN 		= 11;
+const uint8_t CLR_DSP 		= 15;
+
+/***************************
+	Operational variables
+***************************/
 
 uint8_t data = 0;
 
@@ -77,6 +101,16 @@ int main() {
 	gpio_set_dir(RED, GPIO_OUT);	
 	gpio_init(GREEN);
 	gpio_set_dir(GREEN, GPIO_OUT);	
+	gpio_init(OE);
+	gpio_set_dir(OE, GPIO_OUT);	
+	gpio_init(DATA_IN);
+	gpio_set_dir(DATA_IN, GPIO_OUT);	
+	gpio_init(STORE_CLK);
+	gpio_set_dir(STORE_CLK, GPIO_OUT);	
+	gpio_init(SERIAL_CLK);
+	gpio_set_dir(SERIAL_CLK, GPIO_OUT);	
+	gpio_init(CLR_DSP);
+	gpio_set_dir(CLR_DSP, GPIO_OUT);	
 	
 	// Setting up the i2c slave
 	gpio_init(SLAVE_SDA);
@@ -91,6 +125,24 @@ int main() {
 
 	setup_module_data();
 	
+	gpio_put(CLR_DSP, 1);
+	gpio_put(OE, 0);
+	sleep_us(10);
+	gpio_put(DATA_IN, 1);
+	sleep_us(10);
+	for(uint i = 0; i < 40; i++){
+		gpio_put(SERIAL_CLK, 1);
+		sleep_ms(25);
+		gpio_put(SERIAL_CLK, 0);
+		sleep_ms(25);
+		gpio_put(STORE_CLK, 1);
+		sleep_ms(25);
+		gpio_put(STORE_CLK, 1);
+		sleep_ms(25);
+	}
+
+
+
 	/**********************
 		main game loop
 	**********************/
