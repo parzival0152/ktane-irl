@@ -12,16 +12,24 @@
 
 #define BAR_DELAY 500
 
-const utin8_t MASTER_SDA = 14;
-const utin8_t MASTER_SCL = 15;
-const utin8_t SLAVE_SDA = 16;
-const utin8_t SLAVE_SCL = 17;
+const uint8_t MASTER_SDA = 14;
+const uint8_t MASTER_SCL = 15;
+const uint8_t SLAVE_SDA = 16;
+const uint8_t SLAVE_SCL = 17;
 
-const utin8_t BUTTON = 21;
+const uint8_t BUTTON = 21;
 
 const uint8_t BUTTON_RED = 12;
 const uint8_t BUTTON_GREEN = 11;
 const uint8_t BUTTON_BLUE = 10;
+
+const uint8_t BAR_RED = 12;
+const uint8_t BAR_GREEN = 11;
+const uint8_t BAR_BLUE = 10;
+
+const uint8_t STATUS_RED = 12;
+const uint8_t STATUS_GREEN = 11;
+const uint8_t STATUS_BLUE = 10;
 
 uint8_t data = 0;
 

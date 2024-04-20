@@ -17,12 +17,13 @@ const uint8_t SLAVE_SCL = 17;
 const uint8_t I2C_SLAVE_ADDRESS = 0x17;
 
 const uint8_t ADC_IN = 26;
-const uint8_t CTRL_0 = 19;
-const uint8_t CTRL_1 = 20;
-const uint8_t CTRL_2 = 21;
+const uint8_t CTRL_0 = 5;
+const uint8_t CTRL_1 = 6;
+const uint8_t CTRL_2 = 7;
 
-const uint8_t RED_PIN = 7;
-const uint8_t GREEN_PIN = 8;
+const uint8_t STATUS_RED 	= 8;
+const uint8_t STATUS_GREEN 	= 9;
+const uint8_t STATUS_BLUE 	= 10;
 
 uint8_t data = 0;
 static uint8_t recv_data = 0;
@@ -83,14 +84,13 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 }
 void switch_adc_to_index(uint index) {
 	// switch the ADC multiplexer to the given index (lower 3 bits of the index)
-	printf("Switching the ADC to index %d", index);
+	printf("Switching the ADC to index %d\n", index);
 	gpio_put(CTRL_0, (index & 1));
 	gpio_put(CTRL_1, (index & 2));
 	gpio_put(CTRL_2, (index & 4));
 }
 
 uint16_t read_from_index(uint index) {
-	// TODO: consider this function to taking multiple samples and returning the average
 	switch_adc_to_index(index);
 	sleep_ms(50);
 	uint32_t read_buffer = 0;
@@ -159,10 +159,10 @@ int main() {
 		GPIO init block
 	**************************/
 	// LED PIN init
-	gpio_init(RED_PIN);
-	gpio_set_dir(RED_PIN, GPIO_OUT);	
-	gpio_init(GREEN_PIN);
-	gpio_set_dir(GREEN_PIN, GPIO_OUT);	
+	gpio_init(STATUS_RED);
+	gpio_set_dir(STATUS_RED, GPIO_OUT);	
+	gpio_init(STATUS_GREEN);
+	gpio_set_dir(STATUS_GREEN, GPIO_OUT);	
 
 	// ADC control Pin init
 	gpio_init(CTRL_0);
@@ -188,6 +188,13 @@ int main() {
     i2c_init(MODULE_I2C, I2C_BAUDRATE);
     i2c_slave_init(MODULE_I2C, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
 
+	while(1) {
+		for(int i = 0; i < 6; i++){
+			print_color(read_color(i));
+			sleep_ms(500);
+		}
+	}
+
 	while(!config_recv_flag){ // Wait till the config data has been given
 		sleep_ms(50);
 	}
@@ -195,7 +202,7 @@ int main() {
 	// Read the connected wires and calculate correct solution
 	setup_wires();
 	if(solve_matrix_length < 3) {
-		gpio_put(RED_PIN, 1);
+		gpio_put(STATUS_RED, 1);
 		while(1) {
 			printf("Config Error: Too few wires attached\n");
 			sleep_ms(250);
@@ -206,14 +213,14 @@ int main() {
 		//TODO: module gameplay procedure
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
-		gpio_put(GREEN_PIN, 1);
+		gpio_put(STATUS_GREEN, 1);
 		printf("Waiting forever\n");
 		while(1) {
 			sleep_ms(50);
 		}
 	}
 	if(lose_flag) {
-		gpio_put(RED_PIN, 1);
+		gpio_put(STATUS_RED, 1);
 		while(1) {
 			sleep_ms(50);
 		}
