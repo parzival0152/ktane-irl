@@ -28,7 +28,7 @@
 const uint LED_PIN = 9;
 const uint FIRST_FAIL = 23;
 const uint SECOND_FAIL = 22;
-const uint START_BUTTON = 13;
+const uint START_BUTTON = 4;
 const uint BUZZER_PIN = 21;
 
 static uint8_t addresses[MAX_MODULE_COUNT] = {0};
@@ -46,7 +46,7 @@ static uint8_t  fails = 0;
 
 static char fire = false;
 
-static enum master_states {
+volatile enum master_states {
 	NOT_READY,
 	READY_2_GO,
 	GOING,
@@ -55,9 +55,12 @@ static enum master_states {
 
 
 void gpio_callback(uint gpio, uint32_t events) {
-	if((gpio == 2) && (events & GPIO_IRQ_EDGE_RISE) && (master_state == READY_2_GO)) {
+	printf("Interupt called from pin %d\n");
+	if((events & GPIO_IRQ_EDGE_RISE) && (master_state == READY_2_GO)) {
 		master_state = GOING;
+		printf("setting the master state to be GOING\n");
 	}
+	printf("master state is: %d\n", master_state);
 }
 
 int64_t beep_callback(alarm_id_t id, void *user_data) {
@@ -113,9 +116,6 @@ void setup_master() {
 	// TODO: read some pins to configure the amount of time that we start with
 
 	game_timer = 3 * 60; // set the amount of time for the game to be 5 mins
-
-	// TODO: read the hardcode input pin
-	gpio_set_irq_enabled_with_callback(START_BUTTON, GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
 }
 
 void populate_addresses() {
@@ -189,24 +189,28 @@ int main() {
 	
 	TM1637_init(CLK_PIN, DIO_PIN);  
     TM1637_clear(); 
-    TM1637_set_brightness(4); // max value, default is 0
-	
+    TM1637_set_brightness(4);
+ 	TM1637_display_both(69,69,true);
 	sleep_ms(5000);
-	printf("Starting\n");
-	gpio_put(FIRST_FAIL, 1);
-	gpio_put(SECOND_FAIL, 1);
-	start_game();
-	
+	printf("master state is: %d\n", master_state);
 	printf("Finished Waiting\n");
 	populate_addresses();
-	if(module_count == 0){
-		printf("Error: No modules detected!\n");
-		gpio_put(FIRST_FAIL, 1);	
-		while(1);
-	}
+	// if(module_count == 0){
+	// 	printf("Error: No modules detected!\n");
+	// 	gpio_put(FIRST_FAIL, 1);	
+	// 	while(1);
+	// }
 	init_game();
-	// master_state = READY_2_GO; // wait for user to push the start button to begin the game
-	// while(master_state == READY_2_GO);
+	gpio_put(LED_PIN, 1);
+	master_state = READY_2_GO; // wait for user to push the start button to begin the game
+	gpio_set_irq_enabled_with_callback(START_BUTTON, GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
+ 	TM1637_display_both(00,00,true);
+	while(master_state == READY_2_GO);
+
+	printf("The master code has exited the loop\n");
+ 	TM1637_display_both(11,11,true);
+
+	gpio_put(LED_PIN, 0);
 	sleep_ms(1000);
 	start_game();
 	loop();
