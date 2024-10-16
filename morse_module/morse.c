@@ -42,8 +42,8 @@ static uint8_t skip_press = 0;
 const uint I2C_SLAVE_ADDRESS = 0x18;
 const uint SCREEN_ADDR = 0x27;
 
-const uint8_t debounce_factor = 5;
-const uint8_t loop_sleep_time_in_ms = 20;
+const uint8_t DEBOUNCE_FACTOR = 5;
+const uint8_t LOOP_SLEEP_TIME_IN_MS = 20;
 
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     switch (event) {
@@ -177,21 +177,21 @@ int main() {
 
 		// handle the press of the button
 		
-		if(inc_count > debounce_factor) {
+		if(inc_count > DEBOUNCE_FACTOR) {
 			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
 			printf("button has been pressed for freq dec\n");
 		}
-		if(dec_count > debounce_factor) {
+		if(dec_count > DEBOUNCE_FACTOR) {
 			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
 			printf("button has been pressed for freq inc\n");
 		}
-		if(tx_count > debounce_factor) {
+		if(tx_count > DEBOUNCE_FACTOR) {
 			printf("TX button has been pressed\n");
 			printf("sent: %x, correc: %x\n",starting_index, correct_index);
 			state = (starting_index != correct_index) ? FAILED : SUCCEEDED;
 			fail_flag = state == FAILED;
 		}
-		if(inc_count > debounce_factor || dec_count > debounce_factor || tx_count > debounce_factor) {
+		if(inc_count > DEBOUNCE_FACTOR || dec_count > DEBOUNCE_FACTOR || tx_count > DEBOUNCE_FACTOR) {
 			inc_count = 0;
 			dec_count = 0;
 			tx_count = 0;
@@ -208,7 +208,7 @@ int main() {
 			gpio_put(RED, 0);
 			fail_flag = 0;
 		}
-		sleep_ms(loop_sleep_time_in_ms);
+		sleep_ms(LOOP_SLEEP_TIME_IN_MS);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
