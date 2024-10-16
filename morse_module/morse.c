@@ -29,6 +29,8 @@ const uint ADDR1 = 1;
 const uint ADDR2 = 2;
 const uint ADDR3 = 3;
 
+const int pins[] = {ADDR0, ADDR1, ADDR2, ADDR3};
+
 static volatile union {
 	uint16_t reg;
 	struct {
@@ -117,7 +119,7 @@ static void do_blink(){
 	}
 }
 
-static void init_i2c_slave() {
+static void calc_and_setup_i2c() {
 	i2c_addr.val.top = 1;
 	i2c_addr.val.addr3 = gpio_get(ADDR3);
 	i2c_addr.val.addr2 = gpio_get(ADDR2);
@@ -171,14 +173,13 @@ static inline void setup_mcu() {
 	gpio_pull_down(TX);
 
 	// Setting up the addr bits
-	int pins[4] = {ADDR0, ADDR1, ADDR2, ADDR3};
-	for(int i = 0; i < 4; i++) {
+	for(size_t i = 0; i < sizeof(pins)/sizeof(pins[0]); i++) {
 		gpio_init(pins[i]);
 		gpio_set_dir(pins[i], GPIO_IN);
 		gpio_pull_down(pins[i]);
 	}
 
-	init_i2c_slave();
+	calc_and_setup_i2c();
 
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
@@ -240,7 +241,6 @@ int main() {
 			fail_flag = 0;
 		}
 		sleep_ms(20);
-		printf("the addr is: %x\n", i2c_addr);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
