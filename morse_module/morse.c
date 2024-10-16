@@ -15,21 +15,21 @@
 #define PERIPHERAL_I2C i2c1
 #define SCREEN_REFRESH_COUNT 75
 
-const uint MASTER_SDA = 14;
-const uint MASTER_SCL = 15;
-const uint SLAVE_SDA = 16;
-const uint SLAVE_SCL = 17;
+const uint8_t MASTER_SDA = 14;
+const uint8_t MASTER_SCL = 15;
+const uint8_t SLAVE_SDA = 16;
+const uint8_t SLAVE_SCL = 17;
 
-const uint FREQ_DEC = 20;
-const uint FREQ_INC = 18;
-const uint TX = 19;
+const uint8_t FREQ_DEC = 20;
+const uint8_t FREQ_INC = 18;
+const uint8_t TX = 19;
 
-const uint ADDR0 = 0;
-const uint ADDR1 = 1;
-const uint ADDR2 = 2;
-const uint ADDR3 = 3;
+const uint8_t ADDR0 = 0;
+const uint8_t ADDR1 = 1;
+const uint8_t ADDR2 = 2;
+const uint8_t ADDR3 = 3;
 
-const int pins[] = {ADDR0, ADDR1, ADDR2, ADDR3};
+const int PINS[] = {ADDR0, ADDR1, ADDR2, ADDR3};
 
 static volatile union {
 	uint16_t reg;
@@ -173,10 +173,10 @@ static inline void setup_mcu() {
 	gpio_pull_down(TX);
 
 	// Setting up the addr bits
-	for(size_t i = 0; i < sizeof(pins)/sizeof(pins[0]); i++) {
-		gpio_init(pins[i]);
-		gpio_set_dir(pins[i], GPIO_IN);
-		gpio_pull_down(pins[i]);
+	for(size_t i = 0; i < sizeof(PINS)/sizeof(PINS[0]); i++) {
+		gpio_init(PINS[i]);
+		gpio_set_dir(PINS[i], GPIO_IN);
+		gpio_pull_down(PINS[i]);
 	}
 
 	calc_and_setup_i2c();
