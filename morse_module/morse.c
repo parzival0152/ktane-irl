@@ -24,6 +24,22 @@ const uint FREQ_DEC = 20;
 const uint FREQ_INC = 18;
 const uint TX = 19;
 
+const uint ADDR0 = 0;
+const uint ADDR1 = 1;
+const uint ADDR2 = 2;
+const uint ADDR3 = 3;
+
+static volatile union {
+	uint16_t reg;
+	struct {
+		bool addr0 : 1;
+		bool addr1 : 1;
+		bool addr2 : 1;
+		bool addr3 : 1;
+		uint8_t top : 3;
+	} val;
+} i2c_addr;
+
 const uint8_t RED = 7;
 const uint8_t GREEN = 6;
 const uint8_t SIGNAL_LED = 8;
@@ -101,6 +117,17 @@ static void do_blink(){
 	}
 }
 
+static void init_i2c_slave() {
+	i2c_addr.val.top = 1;
+	i2c_addr.val.addr3 = gpio_get(ADDR3);
+	i2c_addr.val.addr2 = gpio_get(ADDR2);
+	i2c_addr.val.addr1 = gpio_get(ADDR1);
+	i2c_addr.val.addr0 = gpio_get(ADDR0);
+
+    i2c_init(MODULE_I2C, I2C_BAUDRATE);
+    i2c_slave_init(MODULE_I2C, i2c_addr.reg, &i2c_slave_handler);
+}
+
 static inline void setup_mcu() {
 	/**************************
 		GPIO init block
@@ -122,9 +149,6 @@ static inline void setup_mcu() {
 	gpio_pull_up(SLAVE_SDA);
 	gpio_pull_up(SLAVE_SCL);
 
-    i2c_init(MODULE_I2C, I2C_BAUDRATE);
-    i2c_slave_init(MODULE_I2C, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
-
 	// Setting up the i2c master
 	gpio_init(MASTER_SDA);
 	gpio_init(MASTER_SCL);
@@ -145,6 +169,16 @@ static inline void setup_mcu() {
 	gpio_pull_down(FREQ_DEC);
 	gpio_pull_down(FREQ_INC);
 	gpio_pull_down(TX);
+
+	// Setting up the addr bits
+	int pins[4] = {ADDR0, ADDR1, ADDR2, ADDR3};
+	for(int i = 0; i < 4; i++) {
+		gpio_init(pins[i]);
+		gpio_set_dir(pins[i], GPIO_IN);
+		gpio_pull_down(pins[i]);
+	}
+
+	init_i2c_slave();
 
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
@@ -206,6 +240,7 @@ int main() {
 			fail_flag = 0;
 		}
 		sleep_ms(20);
+		printf("the addr is: %x\n", i2c_addr);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
