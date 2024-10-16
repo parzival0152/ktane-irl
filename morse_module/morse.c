@@ -76,30 +76,7 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 }
 
 static void gpio_handler(uint gpio, uint32_t events) {
-	if(skip_press) {
-		return;
-	}
-	skip_press = 1;
-	if(!(events & GPIO_IRQ_EDGE_RISE))
-		return;
-	switch(gpio) {
-		case FREQ_DEC:
-			printf("button has been pressed for freq dec\n");
-			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
-			break;
-		case FREQ_INC:
-			printf("button has been pressed for freq inc\n");
-			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
-			break;
-		case TX:
-			printf("TX button has been pressed\n");
-			printf("sent: %x, correc: %x\n",starting_index, correct_index);
-			state = (starting_index != correct_index) ? FAILED : SUCCEEDED;
-			fail_flag = state == FAILED;
-			break;
-		default:
-			printf("Bro, how did this happen\n");
-	}
+	printf("a\n");
 }
 
 static void setup_module_data() {
@@ -190,6 +167,7 @@ int main() {
 	display_freq(starting_index);
 	uint8_t current_index = starting_index;
 	uint8_t refresh_counter = SCREEN_REFRESH_COUNT;
+	uint8_t inc_count, dec_count, tx_count = 0;
 	while(state != SUCCEEDED && !lose_flag){ // main module loop
 
 		// read the state of the three buttons
@@ -198,8 +176,36 @@ int main() {
 		bool tx  = gpio_get(TX);
 
 		// make sure that the button isnt bounding
+		inc_count = inc ? inc_count + 1 : 0;
+		dec_count = dec ? dec_count + 1 : 0;
+		tx_count = tx ? tx_count + 1 : 0;
 
 		// handle the press of the button
+		
+		if(inc_count > 5) {
+			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
+			printf("button has been pressed for freq dec\n");
+		}
+		if(dec_count > 5) {
+			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
+			printf("button has been pressed for freq inc\n");
+		}
+		if(tx_count > 5) {
+			printf("TX button has been pressed\n");
+			printf("sent: %x, correc: %x\n",starting_index, correct_index);
+			state = (starting_index != correct_index) ? FAILED : SUCCEEDED;
+			fail_flag = state == FAILED;
+		}
+		if(inc_count > 5 || dec_count > 5 || tx_count > 5) {
+			inc_count = 0;
+			dec_count = 0;
+			tx_count = 0;
+		}
+
+		if(current_index != starting_index) {
+			display_freq(starting_index);
+			current_index = starting_index;
+		}
 
 		if(fail_flag) { // If there was a FAIL, hold the LED red for a bit and then go back to normal.
 			gpio_put(RED, 1);
@@ -207,7 +213,7 @@ int main() {
 			gpio_put(RED, 0);
 			fail_flag = 0;
 		}
-		sleep_ms(25);
+		sleep_ms(20);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
