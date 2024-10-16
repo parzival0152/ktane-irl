@@ -75,10 +75,6 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     }
 }
 
-static void gpio_handler(uint gpio, uint32_t events) {
-	printf("a\n");
-}
-
 static void setup_module_data() {
 	uint32_t seed_data = get_rand_32();	
 	correct_index = seed_data & 0x0f;
@@ -149,10 +145,6 @@ static inline void setup_mcu() {
 	gpio_pull_down(FREQ_DEC);
 	gpio_pull_down(FREQ_INC);
 	gpio_pull_down(TX);
-
-    gpio_set_irq_enabled_with_callback(FREQ_DEC, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
-    gpio_set_irq_enabled_with_callback(FREQ_INC, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
-    gpio_set_irq_enabled_with_callback(TX, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
 
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
