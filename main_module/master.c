@@ -81,7 +81,7 @@ int64_t beep_callback(alarm_id_t id, void *user_data) {
 		gpio_deinit(BUZZER_PIN);
 	}
 	else{
-    	clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
+		clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
 		gpio_put(BUZZER_PIN, 1);
 	}
 	fire = ~fire;
@@ -97,7 +97,7 @@ bool clock_countdown_callback(struct repeating_timer *t) {
 	bool update = (game_timer >= 0 && !game_finished);
 	
 	if(update) {
-    	TM1637_display_both(game_timer/60, game_timer % 60, true);
+		TM1637_display_both(game_timer/60, game_timer % 60, true);
 		game_timer--;
 	}
 	return update;
@@ -178,7 +178,7 @@ void init_game() {
 void start_game() {
 	uint8_t txdata = START;
 	i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
-    add_repeating_timer_ms(-1000, clock_countdown_callback, NULL, &game_timer_timer);
+	add_repeating_timer_ms(-1000, clock_countdown_callback, NULL, &game_timer_timer);
 	add_alarm_in_ms(1000, beep_callback, NULL, false);
 }
 
@@ -212,8 +212,8 @@ void loop() {
 			if (rxdata == FAILED) {
 				i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
 				fails++;
-    			clock_gpio_init(25, CLOCKS_CLK_GPOUT3_CTRL_AUXSRC_VALUE_CLK_SYS, FAIL_TIMER_PITCH);
-    			add_repeating_timer_ms(-400, fail_beep_shutoff_callback, NULL, &fail_buzzer_timer);
+				clock_gpio_init(25, CLOCKS_CLK_GPOUT3_CTRL_AUXSRC_VALUE_CLK_SYS, FAIL_TIMER_PITCH);
+				add_repeating_timer_ms(-400, fail_beep_shutoff_callback, NULL, &fail_buzzer_timer);
 				printf("Detected that a module has failed!\n");
 			}
 			printf("Reading state from addres: %x, it is %d\n", addresses[i], rxdata);
@@ -234,8 +234,8 @@ int main() {
 	setup_master(); // Do the setup for the master
 	
 	TM1637_init(CLK_PIN, DIO_PIN);  
-    TM1637_clear(); 
-    TM1637_set_brightness(4);
+	TM1637_clear(); 
+	TM1637_set_brightness(4);
 	sleep_ms(2000);
 	printf("master state is: %d\n", master_state);
 	printf("Finished Waiting\n");
