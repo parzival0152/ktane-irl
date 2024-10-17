@@ -31,6 +31,11 @@ const uint8_t SECOND_FAIL = 22;
 const uint8_t START_BUTTON = 4;
 const uint8_t BUZZER_PIN = 21;
 
+const int BUZZER_ON_DELAY 	= -200000;
+const int BUZZER_OFF_DELAY 	= -800000;
+const uint8_t DISPLAY_BRIGHTNESS = 4;
+const uint32_t START_DELAY = 2000;
+
 const uint8_t MIN_MODULE_COUNT = 1;
 
 static uint8_t addresses[MAX_MODULE_COUNT] = {0};
@@ -47,7 +52,7 @@ static int16_t game_timer;
 static struct repeating_timer game_timer_timer;
 static uint8_t  fails = 0;
 
-static char fire = false;
+static char beep_edge = false;
 
 volatile enum master_states {
 	NOT_READY,
@@ -73,7 +78,7 @@ int64_t beep_callback(alarm_id_t id, void *user_data) {
 		return 0;
 	}
 	
-	if(fire){
+	if(beep_edge){
 		// clock_stop(CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS);
 		gpio_put(BUZZER_PIN, 0);
 	}
@@ -81,8 +86,8 @@ int64_t beep_callback(alarm_id_t id, void *user_data) {
     	// clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
 		gpio_put(BUZZER_PIN, 1);
 	}
-	fire = ~fire;
-	return fire ? -200000 : -800000;
+	beep_edge = !beep_edge;
+	return beep_edge ? BUZZER_ON_DELAY : BUZZER_OFF_DELAY;
 }
 
 bool clock_countdown_callback(struct repeating_timer *t) {
@@ -178,21 +183,8 @@ void start_game() {
 }
 
 void update_fails() {
-	switch(fails) {
-		default:
-		case 0:
-			gpio_put(FIRST_FAIL, 0);
-			gpio_put(SECOND_FAIL, 0);
-			break;
-		case 1:
-			gpio_put(FIRST_FAIL, 1);
-			gpio_put(SECOND_FAIL, 0);
-			break;
-		case 2:
-			gpio_put(FIRST_FAIL, 1);
-			gpio_put(SECOND_FAIL, 1);
-			break;
-	}
+	gpio_put(FIRST_FAIL, fails > 0 ? 1 : 0);
+	gpio_put(SECOND_FAIL, fails > 1 ? 1 : 0);
 }
 
 void loop() {
@@ -216,7 +208,7 @@ void loop() {
 		sleep_ms(50);
 	}
 	// game is done, handle it
-	game_finished = 1;
+	game_finished = true;
 }
 
 int main() {
@@ -228,8 +220,8 @@ int main() {
 	
 	TM1637_init(CLK_PIN, DIO_PIN);  
     TM1637_clear(); 
-    TM1637_set_brightness(4);
-	sleep_ms(2000);
+    TM1637_set_brightness(DISPLAY_BRIGHTNESS);
+	sleep_ms(START_DELAY);
 	printf("master state is: %d\n", master_state);
 	printf("Finished Waiting\n");
 	populate_addresses();
