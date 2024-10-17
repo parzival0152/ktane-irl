@@ -1,60 +1,20 @@
 #include <stdio.h>
-#include "pico/stdlib.h"
-#include "pico/multicore.h"
-#include "pico/i2c_slave.h"
-#include "pico/rand.h"
-#include "hardware/gpio.h"
-#include "hardware/i2c.h"
+#include <string.h>
+#include <pico/stdlib.h>
+#include <pico/multicore.h>
+#include <pico/i2c_slave.h>
+#include <pico/rand.h>
+#include <hardware/gpio.h>
+#include <hardware/i2c.h>
 #include "../ktane-globals/def.h"
-
-#define MODULE_I2C i2c0
-#define PERIPHERAL_I2C i2c1
-
-#define BAR_DELAY 500
-
-const uint8_t MASTER_SDA = 14;
-const uint8_t MASTER_SCL = 15;
-const uint8_t SLAVE_SDA = 16;
-const uint8_t SLAVE_SCL = 17;
-
-const uint8_t BUTTON = 21;
-
-const uint8_t BUTTON_RED = 12;
-const uint8_t BUTTON_GREEN = 11;
-const uint8_t BUTTON_BLUE = 10;
-
-const uint8_t BAR_RED_PIN = 12;
-const uint8_t BAR_GREEN_PIN = 11;
-const uint8_t BAR_BLUE_PIN = 10;
-
-const uint8_t STATUS_RED = 12;
-const uint8_t STATUS_GREEN = 11;
-const uint8_t STATUS_BLUE = 10;
+#include "button.h"
+#include "display.h"
 
 uint8_t data = 0;
 
 static uint8_t battery_count = 0;
 static uint8_t lit_frk = 0;
 static uint8_t lit_car = 0;
-
-enum button_colors {
-	RED,
-	WHITE,
-	BLUE,
-	YELLOW
-} button_color;
-
-enum bar_colors {
-	BAR_RED,
-	BAR_WHITE,
-	BAR_BLUE,
-	BAR_YELLOW
-} bar_color;
-
-enum button_states {
-	IDLE,
-	OTHER
-} button_state;
 
 static bool fail_flag = 0;
 static bool lose_flag = 0;
@@ -111,8 +71,8 @@ static void gpio_handler(uint gpio, uint32_t events) {
 	if (events & GPIO_IRQ_LEVEL_LOW) printf("Level Low ");
 	if (events & GPIO_IRQ_LEVEL_HIGH) printf("Level High ");
 	printf("\n");
-
 }
+
 
 int main() {
 	stdio_init_all(); // initalize stdio for printf
@@ -156,18 +116,21 @@ int main() {
 
     gpio_set_irq_enabled_with_callback(BUTTON, GPIO_IRQ_EDGE_RISE  | GPIO_IRQ_EDGE_FALL, true, &gpio_handler);
 
-	while(state != SUCCEEDED && !lose_flag){
-		// Main Loop
-		bool pin = gpio_get(BUTTON);
-		printf(pin ? "Button is High\n" : "Button is low\n");
-		sleep_ms(500);
-	}
+    SSD1306_init();
+	//while(state != SUCCEEDED && !lose_flag){
+	//	// Main Loop
+	//	bool pin = gpio_get(BUTTON);
+	//	printf(pin ? "Button is High\n" : "Button is low\n");
+	//	sleep_ms(500);
+	//}
+
 	//if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 	//	gpio_put(GREEN, 1);
 	//	printf("Waiting forever\n");
 	//	while(1) {
-	//		sleep_ms(50);
 	//	}
+	
+
 	//}
 	//if(lose_flag) {
 	//	gpio_put(RED, 1);
@@ -176,4 +139,26 @@ int main() {
 	//	}
 	//
 	//}
+	render_area frame_area = {
+        start_col: 0,
+        end_col : SSD1306_WIDTH - 1,
+        start_page : 0,
+        end_page : SSD1306_NUM_PAGES - 1
+    };
+
+    calc_render_area_buflen(&frame_area);
+
+    // zero the entire display
+    uint8_t buf[SSD1306_BUF_LEN];
+    memset(buf, 0, SSD1306_BUF_LEN);
+    render(buf, &frame_area);
+
+
+	char* text = "DETONATE";
+	WriteString(buf, 0, 0, text);
+	render(buf, &frame_area);
+
+	while (true) {
+		sleep_ms(50);
+	}
 }
