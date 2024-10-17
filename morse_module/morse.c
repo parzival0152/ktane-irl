@@ -52,7 +52,7 @@ static uint8_t correct_index;
 static uint8_t starting_index;
 static bool fail_flag = 0;
 static bool lose_flag = 0;
-static enum i2c_slave_responses state = READY_2_START;
+static volatile enum i2c_slave_responses state = READY_2_START;
 
 static uint8_t recv_data = 0;
 static uint8_t skip_press = 0;
@@ -190,11 +190,17 @@ int main() {
 	setup_mcu();
 	setup_module_data();
 
-	multicore_launch_core1(do_blink);
 	display_freq(starting_index);
 	uint8_t current_index = starting_index;
 	uint8_t refresh_counter = SCREEN_REFRESH_COUNT;
 	uint8_t inc_count, dec_count, tx_count = 0;
+		
+	state = READY_2_START;
+
+	while(state == READY_2_START);
+
+	multicore_launch_core1(do_blink);
+
 	while(state != SUCCEEDED && !lose_flag){ // main module loop
 
 		// read the state of the three buttons
