@@ -42,6 +42,9 @@ static uint8_t skip_press = 0;
 const uint I2C_SLAVE_ADDRESS = 0x18;
 const uint SCREEN_ADDR = 0x27;
 
+const uint8_t DEBOUNCE_FACTOR = 5;
+const uint8_t LOOP_SLEEP_TIME_IN_MS = 20;
+
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     switch (event) {
 		case I2C_SLAVE_RECEIVE: // Master is writing to the module
@@ -73,33 +76,6 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 		default:
 			break;
     }
-}
-
-static void gpio_handler(uint gpio, uint32_t events) {
-	if(skip_press) {
-		return;
-	}
-	skip_press = 1;
-	if(!(events & GPIO_IRQ_EDGE_RISE))
-		return;
-	switch(gpio) {
-		case FREQ_DEC:
-			printf("button has been pressed for freq dec\n");
-			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
-			break;
-		case FREQ_INC:
-			printf("button has been pressed for freq inc\n");
-			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
-			break;
-		case TX:
-			printf("TX button has been pressed\n");
-			printf("sent: %x, correc: %x\n",starting_index, correct_index);
-			state = (starting_index != correct_index) ? FAILED : SUCCEEDED;
-			fail_flag = state == FAILED;
-			break;
-		default:
-			printf("Bro, how did this happen\n");
-	}
 }
 
 static void setup_module_data() {
@@ -173,10 +149,6 @@ static inline void setup_mcu() {
 	gpio_pull_down(FREQ_INC);
 	gpio_pull_down(TX);
 
-    gpio_set_irq_enabled_with_callback(FREQ_DEC, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
-    gpio_set_irq_enabled_with_callback(FREQ_INC, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
-    gpio_set_irq_enabled_with_callback(TX, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
-
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
 }
@@ -190,6 +162,7 @@ int main() {
 	display_freq(starting_index);
 	uint8_t current_index = starting_index;
 	uint8_t refresh_counter = SCREEN_REFRESH_COUNT;
+	uint8_t inc_count, dec_count, tx_count = 0;
 	while(state != SUCCEEDED && !lose_flag){ // main module loop
 
 		// read the state of the three buttons
@@ -198,8 +171,36 @@ int main() {
 		bool tx  = gpio_get(TX);
 
 		// make sure that the button isnt bounding
+		inc_count = inc ? inc_count + 1 : 0;
+		dec_count = dec ? dec_count + 1 : 0;
+		tx_count = tx ? tx_count + 1 : 0;
 
 		// handle the press of the button
+		
+		if(inc_count > DEBOUNCE_FACTOR) {
+			starting_index = starting_index == 0xf ? 0xf : (starting_index + 1);
+			printf("button has been pressed for freq dec\n");
+		}
+		if(dec_count > DEBOUNCE_FACTOR) {
+			starting_index = starting_index == 0 ? 0 : (starting_index - 1);
+			printf("button has been pressed for freq inc\n");
+		}
+		if(tx_count > DEBOUNCE_FACTOR) {
+			printf("TX button has been pressed\n");
+			printf("sent: %x, correc: %x\n",starting_index, correct_index);
+			state = (starting_index != correct_index) ? FAILED : SUCCEEDED;
+			fail_flag = state == FAILED;
+		}
+		if(inc_count > DEBOUNCE_FACTOR || dec_count > DEBOUNCE_FACTOR || tx_count > DEBOUNCE_FACTOR) {
+			inc_count = 0;
+			dec_count = 0;
+			tx_count = 0;
+		}
+
+		if(current_index != starting_index) {
+			display_freq(starting_index);
+			current_index = starting_index;
+		}
 
 		if(fail_flag) { // If there was a FAIL, hold the LED red for a bit and then go back to normal.
 			gpio_put(RED, 1);
@@ -207,7 +208,7 @@ int main() {
 			gpio_put(RED, 0);
 			fail_flag = 0;
 		}
-		sleep_ms(25);
+		sleep_ms(LOOP_SLEEP_TIME_IN_MS);
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(GREEN, 1);
