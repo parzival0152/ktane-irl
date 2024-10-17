@@ -23,13 +23,16 @@
 #define DIO_PIN 19
 
 #define MAX_MODULE_COUNT 16
-#define BUZZER_TIMER_PITCH 50000
+
+const uint32_t BUZZER_TIMER_PITCH 	= 49000;
+const uint32_t FAIL_TIMER_PITCH		= 55300;
 
 const uint8_t LED_PIN = 9;
 const uint8_t FIRST_FAIL = 23;
 const uint8_t SECOND_FAIL = 22;
 const uint8_t START_BUTTON = 4;
 const uint8_t BUZZER_PIN = 21;
+const uint8_t FAIL_BUZZER_PIN = 25;
 
 const uint8_t MIN_MODULE_COUNT = 1;
 
@@ -45,6 +48,7 @@ static uint8_t rxdata = 0;
 
 static int16_t game_timer;
 static struct repeating_timer game_timer_timer;
+static struct repeating_timer fail_buzzer_timer;
 static uint8_t  fails = 0;
 
 static char fire = false;
@@ -69,20 +73,24 @@ void gpio_callback(uint gpio, uint32_t events) {
 int64_t beep_callback(alarm_id_t id, void *user_data) {
 
 	if(game_timer == 0 || game_finished) {
-		gpio_put(BUZZER_PIN, 0);
+		gpio_deinit(BUZZER_PIN);
 		return 0;
 	}
 	
 	if(fire){
-		// clock_stop(CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS);
-		gpio_put(BUZZER_PIN, 0);
+		gpio_deinit(BUZZER_PIN);
 	}
 	else{
-    	// clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
+    	clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
 		gpio_put(BUZZER_PIN, 1);
 	}
 	fire = ~fire;
 	return fire ? -200000 : -800000;
+}
+
+bool fail_beep_shutoff_callback(struct repeating_timer *t) {
+	gpio_deinit(FAIL_BUZZER_PIN);
+	return 0;
 }
 
 bool clock_countdown_callback(struct repeating_timer *t) {
@@ -109,9 +117,6 @@ void setup_master() {
 	gpio_set_dir(SECOND_FAIL, GPIO_OUT);	
 	
 	gpio_pull_down(START_BUTTON);
-
-	gpio_init(BUZZER_PIN);
-	gpio_set_dir(BUZZER_PIN, GPIO_OUT);
 
 	// Initialize all the i2c busses
 	gpio_init(MODULE_SDA);
@@ -207,6 +212,8 @@ void loop() {
 			if (rxdata == FAILED) {
 				i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
 				fails++;
+    			clock_gpio_init(25, CLOCKS_CLK_GPOUT3_CTRL_AUXSRC_VALUE_CLK_SYS, FAIL_TIMER_PITCH);
+    			add_repeating_timer_ms(-400, fail_beep_shutoff_callback, NULL, &fail_buzzer_timer);
 				printf("Detected that a module has failed!\n");
 			}
 			printf("Reading state from addres: %x, it is %d\n", addresses[i], rxdata);
