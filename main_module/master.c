@@ -25,17 +25,25 @@
 #define MAX_MODULE_COUNT 16
 #define BUZZER_TIMER_PITCH 50000
 
-const uint LED_PIN = 9;
-const uint FIRST_FAIL = 23;
-const uint SECOND_FAIL = 22;
-const uint START_BUTTON = 4;
-const uint BUZZER_PIN = 21;
+const uint8_t LED_PIN = 9;
+const uint8_t FIRST_FAIL = 23;
+const uint8_t SECOND_FAIL = 22;
+const uint8_t START_BUTTON = 4;
+const uint8_t BUZZER_PIN = 21;
+
+const int BUZZER_ON_DELAY 	= -200000;
+const int BUZZER_OFF_DELAY 	= -800000;
+const uint8_t DISPLAY_BRIGHTNESS = 4;
+const uint32_t START_DELAY = 2000;
+
+const uint8_t MIN_MODULE_COUNT = 1;
 
 static uint8_t addresses[MAX_MODULE_COUNT] = {0};
 static uint8_t module_count = 0;
 
-static bool done = 0;
+static volatile bool done = 0;
 static bool start = 0;
+static volatile bool game_finished = 0;
 
 static uint8_t init_data;
 static uint8_t rxdata = 0;
@@ -44,7 +52,7 @@ static int16_t game_timer;
 static struct repeating_timer game_timer_timer;
 static uint8_t  fails = 0;
 
-static char fire = false;
+static char beep_edge = false;
 
 volatile enum master_states {
 	NOT_READY,
@@ -64,18 +72,32 @@ void gpio_callback(uint gpio, uint32_t events) {
 }
 
 int64_t beep_callback(alarm_id_t id, void *user_data) {
-    clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, fire ? 10 : BUZZER_TIMER_PITCH);
-	fire = ~fire;
-	if(game_timer == 0) return 0;
-	return fire ? -200000 : -800000;
+
+	if(game_timer == 0 || game_finished) {
+		gpio_put(BUZZER_PIN, 0);
+		return 0;
+	}
+	
+	if(beep_edge){
+		// clock_stop(CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS);
+		gpio_put(BUZZER_PIN, 0);
+	}
+	else{
+    	// clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
+		gpio_put(BUZZER_PIN, 1);
+	}
+	beep_edge = !beep_edge;
+	return beep_edge ? BUZZER_ON_DELAY : BUZZER_OFF_DELAY;
 }
 
 bool clock_countdown_callback(struct repeating_timer *t) {
+	bool update = (game_timer >= 0 && !game_finished);
 	
-    TM1637_display_both(game_timer/60, game_timer % 60, true);
-	game_timer--;
-
-	return game_timer >= 0;
+	if(update) {
+    	TM1637_display_both(game_timer/60, game_timer % 60, true);
+		game_timer--;
+	}
+	return update;
 }
 
 void setup_master() {
@@ -93,6 +115,8 @@ void setup_master() {
 	
 	gpio_pull_down(START_BUTTON);
 
+	gpio_init(BUZZER_PIN);
+	gpio_set_dir(BUZZER_PIN, GPIO_OUT);
 
 	// Initialize all the i2c busses
 	gpio_init(MODULE_SDA);
@@ -158,11 +182,17 @@ void start_game() {
 	add_alarm_in_ms(1000, beep_callback, NULL, false);
 }
 
+void update_fails() {
+	gpio_put(FIRST_FAIL, fails > 0 ? 1 : 0);
+	gpio_put(SECOND_FAIL, fails > 1 ? 1 : 0);
+}
+
 void loop() {
 	uint8_t txdata = MODULE_FAILED;
 	done = 0;
 	while(!done && fails < 3 && game_timer > 0) {
 		done = 1;
+		update_fails();
 		for(uint8_t i = 0; i < module_count; i++){
 			i2c_read_blocking(MODULE_I2C, addresses[i], &rxdata, 1, false);
 			done = (rxdata != SUCCEEDED) ? 0 : done;
@@ -178,6 +208,7 @@ void loop() {
 		sleep_ms(50);
 	}
 	// game is done, handle it
+	game_finished = true;
 }
 
 int main() {
@@ -189,17 +220,16 @@ int main() {
 	
 	TM1637_init(CLK_PIN, DIO_PIN);  
     TM1637_clear(); 
-    TM1637_set_brightness(4);
- 	TM1637_display_both(69,69,true);
-	sleep_ms(5000);
+    TM1637_set_brightness(DISPLAY_BRIGHTNESS);
+	sleep_ms(START_DELAY);
 	printf("master state is: %d\n", master_state);
 	printf("Finished Waiting\n");
 	populate_addresses();
-	// if(module_count == 0){
-	// 	printf("Error: No modules detected!\n");
-	// 	gpio_put(FIRST_FAIL, 1);	
-	// 	while(1);
-	// }
+	if(module_count < MIN_MODULE_COUNT){
+		printf("Less then min modules counted!\n");
+		gpio_put(FIRST_FAIL, 1);	
+		while(1);
+	}
 	init_game();
 	gpio_put(LED_PIN, 1);
 	master_state = READY_2_GO; // wait for user to push the start button to begin the game
@@ -207,20 +237,22 @@ int main() {
  	TM1637_display_both(00,00,true);
 	while(master_state == READY_2_GO);
 
-	printf("The master code has exited the loop\n");
- 	TM1637_display_both(11,11,true);
-
 	gpio_put(LED_PIN, 0);
 	sleep_ms(1000);
 	start_game();
 	loop();
+
+	gpio_put(BUZZER_PIN, 0);
+
 	if(fails >= 3 || game_timer == 0) {
 		printf("KABOOM! the bomb has exploded and you are ash\n");
+		TM1637_display_word("FAIL", true);	
 		txdata = GAME_LOSS;
 		i2c_write_blocking(MODULE_I2C, 0x00, &txdata, 1, false);
 	}
 	else {
 		printf("Congratulations, you have defused the bomb!\n");
+		TM1637_display_word("PASS", true);	
 	}
 
 	
