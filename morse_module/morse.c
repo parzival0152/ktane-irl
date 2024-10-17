@@ -197,7 +197,9 @@ int main() {
 		
 	state = READY_2_START;
 
-	while(state == READY_2_START);
+	while(state == READY_2_START) {
+		sleep_ms(10);
+	}
 
 	multicore_launch_core1(do_blink);
 
