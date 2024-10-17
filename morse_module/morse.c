@@ -42,13 +42,6 @@ static uint8_t skip_press = 0;
 const uint I2C_SLAVE_ADDRESS = 0x18;
 const uint SCREEN_ADDR = 0x27;
 
-static struct repeating_timer button_refresh_timer_s;
-
-bool button_refresh_callback(struct repeating_timer *t) {
-	skip_press = 0;
-	return 1;
-}
-
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     switch (event) {
 		case I2C_SLAVE_RECEIVE: // Master is writing to the module
@@ -170,6 +163,12 @@ static inline void setup_mcu() {
     i2c_init(PERIPHERAL_I2C, I2C_BAUDRATE);
 
 	// Setting up the IRQ for the buttons to switch freq and to transmit
+	gpio_init(FREQ_DEC);
+	gpio_init(FREQ_INC);
+	gpio_init(TX);
+	gpio_set_dir(FREQ_DEC, GPIO_IN);
+	gpio_set_dir(FREQ_INC, GPIO_IN);
+	gpio_set_dir(TX, GPIO_IN);
 	gpio_pull_down(FREQ_DEC);
 	gpio_pull_down(FREQ_INC);
 	gpio_pull_down(TX);
@@ -180,8 +179,6 @@ static inline void setup_mcu() {
 
 	lcd_init(PERIPHERAL_I2C, SCREEN_ADDR);
 	lcd_set_cursor(PERIPHERAL_I2C, SCREEN_ADDR, 0, 0);
-
-    add_repeating_timer_ms(250, button_refresh_callback, NULL, &button_refresh_timer_s);
 }
 
 int main() {
@@ -194,15 +191,15 @@ int main() {
 	uint8_t current_index = starting_index;
 	uint8_t refresh_counter = SCREEN_REFRESH_COUNT;
 	while(state != SUCCEEDED && !lose_flag){ // main module loop
-		skip_press = 0;
-		if(starting_index != current_index || refresh_counter == 0){
-			display_freq(starting_index);
-			current_index = starting_index;
-			refresh_counter = SCREEN_REFRESH_COUNT;
-		}
-		else {
-			refresh_counter--;
-		}
+
+		// read the state of the three buttons
+		bool inc = gpio_get(FREQ_INC);
+		bool dec = gpio_get(FREQ_DEC);
+		bool tx  = gpio_get(TX);
+
+		// make sure that the button isnt bounding
+
+		// handle the press of the button
 
 		if(fail_flag) { // If there was a FAIL, hold the LED red for a bit and then go back to normal.
 			gpio_put(RED, 1);

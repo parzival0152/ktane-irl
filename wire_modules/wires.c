@@ -9,7 +9,7 @@
 #include "../ktane-globals/def.h"
 
 #define MODULE_I2C i2c0
-#define SAMPLE_COUNT 10
+#define SAMPLE_COUNT 7
 
 const uint8_t SLAVE_SDA = 16;
 const uint8_t SLAVE_SCL = 17;
@@ -82,6 +82,12 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 			break;
     }
 }
+
+int64_t led_off_clock(alarm_id_t id, void *user_data) {
+	gpio_put(STATUS_RED, 0);
+	return 0;
+}
+
 void switch_adc_to_index(uint index) {
 	// switch the ADC multiplexer to the given index (lower 3 bits of the index)
 	printf("Switching the ADC to index %d\n", index);
@@ -142,7 +148,7 @@ void print_color(uint16_t data) {
 
 void setup_wires () {
 	for(uint i = 0; i < 6; i++) {
-		enum wire_color color = read_color(1);
+		enum wire_color color = read_color(i);
 		wires[i] = color;
 		if(color != NO_COLOR){
 			solve_matrix[solve_matrix_length++] = color;
@@ -188,29 +194,35 @@ int main() {
     i2c_init(MODULE_I2C, I2C_BAUDRATE);
     i2c_slave_init(MODULE_I2C, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
 
-	while(1) {
-		for(int i = 0; i < 6; i++){
-			print_color(read_color(i));
-			sleep_ms(500);
-		}
-	}
-
-	while(!config_recv_flag){ // Wait till the config data has been given
-		sleep_ms(50);
-	}
+	// while(!config_recv_flag){ // Wait till the config data has been given
+	// 	sleep_ms(50);
+	// }
 
 	// Read the connected wires and calculate correct solution
 	setup_wires();
 	if(solve_matrix_length < 3) {
 		gpio_put(STATUS_RED, 1);
 		while(1) {
-			printf("Config Error: Too few wires attached\n");
+			printf("Config Error: Too few wires attached, %d wires found\n", solve_matrix_length);
 			sleep_ms(250);
 		}
 	}
 	correct_index = convert_index_to_real(get_correct_index(solve_matrix, solve_matrix_length, last_serial_odd));
 	while(state != SUCCEEDED && !lose_flag){
-		//TODO: module gameplay procedure
+		for(int i = 0; i < 6; i++){
+			enum wire_color color = read_color(i);
+			if(color != wires[i] && color == NO_COLOR) { // wire at i as been removed
+				if(i != correct_index)  {
+					wires[i] = NO_COLOR;
+					state = FAILED;
+					gpio_put(STATUS_RED, 1);
+					add_alarm_in_ms(1000, led_off_clock, NULL, false);
+				}
+				else {
+					state = SUCCEEDED;
+				}
+			}
+		}
 	}
 	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
 		gpio_put(STATUS_GREEN, 1);

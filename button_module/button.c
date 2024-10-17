@@ -23,9 +23,9 @@ const uint8_t BUTTON_RED = 12;
 const uint8_t BUTTON_GREEN = 11;
 const uint8_t BUTTON_BLUE = 10;
 
-const uint8_t BAR_RED = 12;
-const uint8_t BAR_GREEN = 11;
-const uint8_t BAR_BLUE = 10;
+const uint8_t BAR_RED_PIN = 12;
+const uint8_t BAR_GREEN_PIN = 11;
+const uint8_t BAR_BLUE_PIN = 10;
 
 const uint8_t STATUS_RED = 12;
 const uint8_t STATUS_GREEN = 11;
