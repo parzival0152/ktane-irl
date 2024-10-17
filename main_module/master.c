@@ -243,6 +243,7 @@ int main() {
 	if(module_count < MIN_MODULE_COUNT){
 		printf("Less then min modules counted!\n");
 		gpio_put(FIRST_FAIL, 1);	
+		clock_gpio_init(BUZZER_PIN, CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS, BUZZER_TIMER_PITCH);
 		while(1);
 	}
 	init_game();
