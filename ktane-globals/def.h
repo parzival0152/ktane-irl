@@ -23,3 +23,5 @@ enum i2c_master_commands {
 #define LIT_CAR_INDICATOR 0x40
 #define LIT_FRK_INDICATOR 0x80
 #define BATTARY_COUNT_MASK 0x3
+
+const uint8_t MAX_BATTARYIES = 10;
