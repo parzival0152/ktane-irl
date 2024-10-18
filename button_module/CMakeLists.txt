@@ -10,6 +10,7 @@ pico_sdk_init()
 add_executable(button
 	button.c
 	display.c
+	16x32_font.c
 )
 
 pico_enable_stdio_usb(button 1)

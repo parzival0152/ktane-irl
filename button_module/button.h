@@ -2,7 +2,6 @@
 #define BUTTON_H
 
 #define MODULE_I2C i2c0
-#define PERIPHERAL_I2C i2c1
 
 #define BAR_DELAY 500
 
@@ -13,51 +12,54 @@ const uint8_t SLAVE_SDA = 16;
 const uint8_t SLAVE_SCL = 17;
 
 // button color pins
-const uint8_t BUTTON_RED = 18;
-const uint8_t BUTTON_GREEN = 19;
-const uint8_t BUTTON_BLUE = 20;
+const uint8_t BUTTON_RED_PIN = 18;
+const uint8_t BUTTON_GREEN_PIN = 19;
+const uint8_t BUTTON_BLUE_PIN = 20;
 
 // button pin
 const uint8_t BUTTON = 21;
 
 // status pins
-const uint8_t STATUS_RED = 24;
-const uint8_t STATUS_GREEN = 25;
-const uint8_t STATUS_BLUE = 26;
+const uint8_t STATUS_RED_PIN = 24;
+const uint8_t STATUS_GREEN_PIN = 25;
+const uint8_t STATUS_BLUE_PIN = 26;
 
 // bar pins
 const uint8_t BAR_RED_PIN = 27;
 const uint8_t BAR_GREEN_PIN = 28;
 const uint8_t BAR_BLUE_PIN = 29;
 
-enum ButtonColors {
-	RED,
+typedef enum {
+	RED = 0,
 	WHITE,
 	BLUE,
-	YELLOW
-};
+	YELLOW,
+	BTN_COLOR_NUM
+} ButtonColors;
 
-enum BarColors {
-	BAR_RED,
+typedef enum {
+	BAR_RED = 0,
 	BAR_WHITE,
 	BAR_BLUE,
-	BAR_YELLOW
-};
+	BAR_YELLOW,
+	BAR_COLOR_NUM
+} BarColors;
 
-enum ButtonStates {
+typedef enum {
 	IDLE,
 	OTHER
-};
+} ButtonStates;
 
-enum ButtonLables {
+typedef enum {
 	PRESS = 0,
-    ABORT = 1,
-    DETONATE = 2,
-    HOLD = 3
-};
+    ABORT,
+    DETONATE,
+    HOLD,
+	LABLES_NUM
+} ButtonLables;
 
 const char* const BUTTON_LABLES[] = {
-	"PRESS"
+	"PRESS",
     "ABORT",
     "DETONATE",
     "HOLD"

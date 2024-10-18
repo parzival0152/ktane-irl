@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 #include "display.h"
-#include "16x32_font.h"
 
 #define font console_font_16x32
 
@@ -11,14 +11,13 @@ void calc_render_area_buflen(render_area *area) {
     area->buflen = (area->end_col - area->start_col + 1) * (area->end_page - area->start_page + 1);
 }
 
-#define i2c_default i2c1
 
 void SSD1306_send_cmd(uint8_t cmd) {
     // I2C write process expects a control byte followed by data
     // this "data" can be a command or data to follow up a command
     // Co = 1, D/C = 0 => the driver expects a command
     uint8_t buf[2] = {0x80, cmd};
-    i2c_write_blocking(i2c_default, SSD1306_I2C_ADDR, buf, 2, false);
+    i2c_write_blocking(PERIPHERAL_I2C, SSD1306_I2C_ADDR, buf, 2, false);
 }
 
 void SSD1306_send_cmd_list(uint8_t *buf, int num) {
@@ -39,7 +38,7 @@ void SSD1306_send_buf(uint8_t buf[], int buflen) {
     temp_buf[0] = 0x40;
     memcpy(temp_buf+1, buf, buflen);
 
-    i2c_write_blocking(i2c_default, SSD1306_I2C_ADDR, temp_buf, buflen + 1, false);
+    i2c_write_blocking(PERIPHERAL_I2C, SSD1306_I2C_ADDR, temp_buf, buflen + 1, false);
 
     free(temp_buf);
 }
@@ -112,7 +111,7 @@ static inline int GetFontIndex(uint8_t ch) {
     else return 0; // Not got that char so space.
 }
 
-static void WriteChar(uint8_t *buf, int16_t x, int16_t y, uint8_t ch) {
+static void WriteChar(uint8_t *buf, uint16_t x, uint16_t y, uint8_t ch) {
     if (x > SSD1306_WIDTH - FONT_CHAR_WIDTH || y > SSD1306_HEIGHT - FONT_CHAR_HEIGHT)
         return;
 
@@ -146,7 +145,7 @@ static void WriteChar(uint8_t *buf, int16_t x, int16_t y, uint8_t ch) {
     }
 }
 
-void WriteString(uint8_t *buf, int16_t x, int16_t y, char *str) {
+void WriteString(uint8_t *buf, uint16_t x, uint16_t y, const char * str) {
     // Cull out any string off the screen
     if (x > SSD1306_WIDTH - FONT_CHAR_WIDTH || y > SSD1306_HEIGHT - FONT_CHAR_HEIGHT)
         return;

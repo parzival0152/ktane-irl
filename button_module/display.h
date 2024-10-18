@@ -1,8 +1,13 @@
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#ifndef DISPLAY_H_
+#define DISPLAY_H_
 
 #include <stdint.h>
 #include <hardware/i2c.h>
+
+#include "16x32_font.h"
+
+
+#define PERIPHERAL_I2C i2c1
 
 // have the right size defined or the output will look rather odd!
 // Code has been tested on 128x32 and 128x64 OLED displays
@@ -63,7 +68,7 @@ typedef struct {
 } render_area;
 
 void SSD1306_init();
-void WriteString(uint8_t *buf, int16_t x, int16_t y, char *str);
+void WriteString(uint8_t *buf, uint16_t x, uint16_t y, const char *str);
 void render(uint8_t *buf, render_area *area);
 void calc_render_area_buflen(render_area *area);
 
