@@ -4,7 +4,7 @@
 
 #include "display.h"
 
-#define font console_font_16x32
+const uint32_t* font = CONSOLE_FONT_16X32;
 
 void calc_render_area_buflen(render_area *area) {
     // calculate how long the flattened buffer will be for a render area

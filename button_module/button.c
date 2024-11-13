@@ -15,7 +15,7 @@
 uint8_t data = 0;
 
 static ButtonColors button_color;
-static ButtonLables button_lable;
+static ButtonLabels button_label;
 static uint8_t battery_count;
 static uint8_t lit_frk = 0;
 static uint8_t lit_car = 0;
@@ -79,10 +79,10 @@ static void gpio_handler(uint gpio, uint32_t events) {
 
 void button_module_init() {
     button_color = (ButtonColors)(get_rand_64() % BTN_COLOR_NUM);
-    button_lable = (ButtonLables)(get_rand_64() % LABLES_NUM);
-    battery_count = (get_rand_64() % (MAX_BATTARYIES + 1)); // [0, 10]
+    button_label = (ButtonLabels)(get_rand_64() % LABELS_NUM);
+    battery_count = (get_rand_64() % (MAX_BATTERIES + 1)); // [0, 10]
 
-    stdio_init_all(); // initalize stdio for printf
+    stdio_init_all(); // initialize stdio for printf
     
     /**************************
         GPIO init block
@@ -130,10 +130,10 @@ int main() {
     button_module_init();
 
     render_area frame_area = {
-        start_col: 0,
-        end_col : SSD1306_WIDTH - 1,
-        start_page : 0,
-        end_page : SSD1306_NUM_PAGES - 1
+        .start_col = 0,
+        .end_col = SSD1306_WIDTH - 1,
+        .start_page = 0,
+        .end_page = SSD1306_NUM_PAGES - 1
     };
 
     calc_render_area_buflen(&frame_area);
@@ -166,19 +166,19 @@ int main() {
     printf(
         "Status:\n"
         "\tbutton_color: %s\n"
-        "\tbutton_lable: %d, %s\n"
+        "\tbutton_label: %d, %s\n"
         "\tbattery_count: %d\n",
         button_color == RED     ? "RED" :
         button_color == WHITE   ? "WHITE" :
         button_color == BLUE    ? "BLUE" :
         button_color == YELLOW  ? "YELLOW" : "BAD VALUE",
-        button_lable,
-        BUTTON_LABLES[button_lable],
+        button_label,
+        BUTTON_LABELS[button_label],
         battery_count);
 
 
-    uint16_t centered_x = (SSD1306_WIDTH - strlen(BUTTON_LABLES[button_lable]) * FONT_CHAR_WIDTH) / 2;
-    WriteString(buf, centered_x, 0, BUTTON_LABLES[button_lable]);
+    uint16_t centered_x = (SSD1306_WIDTH - strlen(BUTTON_LABELS[button_label]) * FONT_CHAR_WIDTH) / 2;
+    WriteString(buf, centered_x, 0, BUTTON_LABELS[button_label]);
     render(buf, &frame_area);
 
     switch (button_color)
@@ -192,6 +192,8 @@ int main() {
         gpio_put(BUTTON_GREEN_PIN, 1);
     case RED:
         gpio_put(BUTTON_RED_PIN, 1);
+    default:
+        break;
     }
 
     while (true) {

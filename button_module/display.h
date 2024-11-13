@@ -6,6 +6,8 @@
 
 #include "16x32_font.h"
 
+static const uint8_t FONT_CHAR_WIDTH = FONT_CHAR_16x32_WIDTH;
+static const uint8_t FONT_CHAR_HEIGHT = FONT_CHAR_16x32_HEIGHT;
 
 #define PERIPHERAL_I2C i2c1
 

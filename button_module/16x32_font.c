@@ -1,9 +1,13 @@
 #include "16x32_font.h"
 
-const uint8_t FONT_CHAR_WIDTH = 16;
-const uint8_t FONT_CHAR_HEIGHT = 32;
+// char NON_FULL_ASCII_ORDER[] = {
+//     ' ', '\'',
+//     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+//     '?',
+//     'A', /*...*/ 'Z'
+// };
 
-const uint32_t console_font_16x32[] = {
+const uint32_t CONSOLE_FONT_16X32[] = {
 #ifdef FULL_ASCII
     /*
      * code=0, hex=0x00, ascii="^@"
@@ -5127,4 +5131,4 @@ const uint32_t console_font_16x32[] = {
 #endif
 };
 
-const uint16_t FONT_CHAR_NUM = sizeof(console_font_16x32) / sizeof(console_font_16x32[0]) / FONT_CHAR_WIDTH;
+const uint16_t FONT_CHAR_16X32_NUM = sizeof(CONSOLE_FONT_16X32) / sizeof(CONSOLE_FONT_16X32[0]) / FONT_CHAR_16x32_WIDTH;

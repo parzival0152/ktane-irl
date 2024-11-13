@@ -1,5 +1,7 @@
-#ifndef BUTTON_H
-#define BUTTON_H
+#ifndef BUTTON_H_
+#define BUTTON_H_
+
+#include <stdint.h>
 
 #define MODULE_I2C i2c0
 
@@ -55,10 +57,10 @@ typedef enum {
     ABORT,
     DETONATE,
     HOLD,
-	LABLES_NUM
-} ButtonLables;
+	LABELS_NUM
+} ButtonLabels;
 
-const char* const BUTTON_LABLES[] = {
+const char* const BUTTON_LABELS[] = {
 	"PRESS",
     "ABORT",
     "DETONATE",

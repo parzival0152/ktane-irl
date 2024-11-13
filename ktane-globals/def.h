@@ -1,3 +1,8 @@
+#ifndef KTANE_GLOBAL_DEF_H
+#define KTANE_GLOBAL_DEF_H
+
+#include <stdint.h>
+
 enum i2c_slave_responses {
 	SETTING_UP,
 	READY_2_START,
@@ -24,4 +29,6 @@ enum i2c_master_commands {
 #define LIT_FRK_INDICATOR 0x80
 #define BATTARY_COUNT_MASK 0x3
 
-const uint8_t MAX_BATTARYIES = 10;
+const uint8_t MAX_BATTERIES = 10;
+
+#endif
