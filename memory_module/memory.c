@@ -6,7 +6,7 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 #include "../ktane-globals/def.h"
-
+#include "max7219.c"
 #define MODULE_I2C i2c0
 
 /***********************
@@ -112,6 +112,17 @@ int main() {
 	gpio_init(CLR_DSP);
 	gpio_set_dir(CLR_DSP, GPIO_OUT);	
 	
+	gpio_init(BAR_1);
+	gpio_set_dir(BAR_1, GPIO_OUT);	
+	gpio_init(BAR_2);
+	gpio_set_dir(BAR_2, GPIO_OUT);	
+	gpio_init(BAR_3);
+	gpio_set_dir(BAR_3, GPIO_OUT);	
+	gpio_init(BAR_4);
+	gpio_set_dir(BAR_4, GPIO_OUT);	
+	gpio_init(BAR_5);
+	gpio_set_dir(BAR_5, GPIO_OUT);	
+
 	// Setting up the i2c slave
 	gpio_init(SLAVE_SDA);
 	gpio_init(SLAVE_SCL);
@@ -125,44 +136,46 @@ int main() {
 
 	setup_module_data();
 	
-	gpio_put(CLR_DSP, 1);
-	gpio_put(OE, 0);
-	sleep_us(10);
-	gpio_put(DATA_IN, 1);
-	sleep_us(10);
-	for(uint i = 0; i < 40; i++){
-		gpio_put(SERIAL_CLK, 1);
-		sleep_ms(25);
-		gpio_put(SERIAL_CLK, 0);
-		sleep_ms(25);
-		gpio_put(STORE_CLK, 1);
-		sleep_ms(25);
-		gpio_put(STORE_CLK, 1);
-		sleep_ms(25);
+	// gpio_put(RED, 1);
+	// gpio_put(BAR_1, 1);
+	// gpio_put(BAR_2, 1);
+	// gpio_put(BAR_3, 1);
+	// gpio_put(BAR_4, 1);
+	// gpio_put(BAR_5, 1);
+/*	for(uint i = 0; i < 32; i++){
+		gpio_put(BAR_1, i & 1 == 0);
+		gpio_put(BAR_2, i & 2 == 0);
+		gpio_put(BAR_3, i & 4 == 0);
+		gpio_put(BAR_4, i & 8 == 0);
+		gpio_put(BAR_5, i & 16 == 0);
+		sleep_ms(250);
 	}
-
-
-
-	/**********************
-		main game loop
-	**********************/
-	while(state != SUCCEEDED && !lose_flag){
-	}
-	// win state
-	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
-		gpio_put(GREEN, 1);
-		gpio_put(RED, 0);
-		printf("Waiting forever\n");
-		while(1) {
-			sleep_ms(50);
-		}
-	}
-	// lose state
-	if(lose_flag) {
-		gpio_put(RED, 1);
-		gpio_put(GREEN, 0);
-		while(1) {
-			sleep_ms(50);
-		}
-	}
+*/
+	sleep_ms(2000);
+	MAX7219_init(1,2,3);
+	sleep_ms(2000);
+	max7219_send_command(0xaa);
+	gpio_put(RED, 1);
+	// /**********************
+	// 	main game loop
+	// **********************/
+	// while(state != SUCCEEDED && !lose_flag){
+	// }
+	// // win state
+	// if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
+	// 	gpio_put(GREEN, 1);
+	// 	gpio_put(RED, 0);
+	// 	printf("Waiting forever\n");
+	// 	while(1) {
+	// 		sleep_ms(50);
+	// 	}
+	// }
+	// // lose state
+	// if(lose_flag) {
+ 	// 	gpio_put(RED, 1);
+	// 	gpio_put(GREEN, 0);
+	// 	while(1) {
+	// 		sleep_ms(50);
+	// 	}
+	// }
 }

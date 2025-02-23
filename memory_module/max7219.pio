@@ -1,0 +1,13 @@
+.program max7219
+.side_set 1 opt
+
+	set pins, 1
+.wrap_target
+	pull block
+	set x, 16 side 0b0 ; set the counter of the amount of bits to shift
+	set pins, 0
+_bit_shift_loop:
+	out pins, 1 side 0b1
+	jmp x-- _bit_shift_loop side 0b0
+	set pins, 1
+.wrap

@@ -5,7 +5,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
-add_executable(memory
+add_executable(memory)
+
+pico_generate_pio_header(memory ${CMAKE_CURRENT_LIST_DIR}/max7219.pio)
+
+target_sources(memory PRIVATE
 	memory.c
 )
 
@@ -19,4 +23,5 @@ target_link_libraries(
     pico_i2c_slave
 	pico_rand
 	hardware_i2c
+	hardware_pio
 )
