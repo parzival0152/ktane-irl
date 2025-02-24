@@ -31,11 +31,9 @@ const uint8_t BAR_3 = 20;
 const uint8_t BAR_4 = 19;
 const uint8_t BAR_5 = 18;
 
-const uint8_t STORE_CLK 	= 13;
-const uint8_t SERIAL_CLK 	= 14;
-const uint8_t OE 			= 12;
-const uint8_t DATA_IN 		= 11;
-const uint8_t CLR_DSP 		= 15;
+const uint8_t CHIP_SELECT 	= 13;
+const uint8_t CLOCK_OUT 	= 14;
+const uint8_t DATA_OUT		= 15;
 
 /***************************
 	Operational variables
@@ -89,6 +87,40 @@ static void setup_module_data() {
 	// TODO: impelemt this to the correct module data
 }
 
+void max7219_core_code() {
+
+	uint32_t tmp;
+	uint16_t data;
+
+	gpio_init(CHIP_SELECT);
+	gpio_set_dir(CHIP_SELECT, GPIO_OUT);
+	gpio_init(CLOCK_OUT);
+	gpio_set_dir(CLOCK_OUT, GPIO_OUT);
+	gpio_init(DATA_OUT);
+	gpio_set_dir(DATA_OUT, GPIO_OUT);
+
+	gpio_put(CHIP_SELECT, 1);
+
+	while(true) {
+		tmp = multicore_fifo_pop_blocking();
+		data = tmp & 0xffff;
+
+		gpio_put(CHIP_SELECT, 0);
+		sleep_us(2);
+		for(int i = 15; i >= 0; i--) {
+			gpio_put(DATA_OUT, data & (1 << i));
+			gpio_put(CLOCK_OUT, 1);
+			sleep_us(1);
+			gpio_put(CLOCK_OUT, 0);
+			sleep_us(1);
+		}
+		gpio_put(DATA_OUT, 0);
+		gpio_put(CHIP_SELECT, 1);
+		sleep_us(1);
+		gpio_put(CHIP_SELECT, 0);
+	}
+
+}
 
 int main() {
 	stdio_init_all(); // initalize stdio for printf
@@ -101,16 +133,7 @@ int main() {
 	gpio_set_dir(RED, GPIO_OUT);	
 	gpio_init(GREEN);
 	gpio_set_dir(GREEN, GPIO_OUT);	
-	gpio_init(OE);
-	gpio_set_dir(OE, GPIO_OUT);	
-	gpio_init(DATA_IN);
-	gpio_set_dir(DATA_IN, GPIO_OUT);	
-	gpio_init(STORE_CLK);
-	gpio_set_dir(STORE_CLK, GPIO_OUT);	
-	gpio_init(SERIAL_CLK);
-	gpio_set_dir(SERIAL_CLK, GPIO_OUT);	
-	gpio_init(CLR_DSP);
-	gpio_set_dir(CLR_DSP, GPIO_OUT);	
+	
 	
 	// Setting up the i2c slave
 	gpio_init(SLAVE_SDA);
@@ -125,44 +148,42 @@ int main() {
 
 	setup_module_data();
 	
-	gpio_put(CLR_DSP, 1);
-	gpio_put(OE, 0);
-	sleep_us(10);
-	gpio_put(DATA_IN, 1);
-	sleep_us(10);
-	for(uint i = 0; i < 40; i++){
-		gpio_put(SERIAL_CLK, 1);
-		sleep_ms(25);
-		gpio_put(SERIAL_CLK, 0);
-		sleep_ms(25);
-		gpio_put(STORE_CLK, 1);
-		sleep_ms(25);
-		gpio_put(STORE_CLK, 1);
-		sleep_ms(25);
-	}
+	multicore_launch_core1(max7219_core_code);
 
+	sleep_ms(1000);
+	multicore_fifo_push_blocking_inline(0x09ff); // set decode to all
+	sleep_ms(1000);
+	multicore_fifo_push_blocking_inline(0x0106); // write aa to digit 0
+	sleep_ms(1000);
+	multicore_fifo_push_blocking_inline(0x0a08); // set intensity to something
+	sleep_ms(1000);
+	multicore_fifo_push_blocking_inline(0x0b00); // set to only scan first digit
+	sleep_ms(1000);
+	multicore_fifo_push_blocking_inline(0x0c01); // exit shutdown mode
+	sleep_ms(1000);
+	gpio_put(RED, 1);
 
 
 	/**********************
 		main game loop
 	**********************/
-	while(state != SUCCEEDED && !lose_flag){
-	}
-	// win state
-	if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
-		gpio_put(GREEN, 1);
-		gpio_put(RED, 0);
-		printf("Waiting forever\n");
-		while(1) {
-			sleep_ms(50);
-		}
-	}
-	// lose state
-	if(lose_flag) {
-		gpio_put(RED, 1);
-		gpio_put(GREEN, 0);
-		while(1) {
-			sleep_ms(50);
-		}
-	}
+	// while(state != SUCCEEDED && !lose_flag){
+	// }
+	// // win state
+	// if(state == SUCCEEDED) { // If there was a success, turn the LED GREEN and halt.
+	// 	gpio_put(GREEN, 1);
+	// 	gpio_put(RED, 0);
+	// 	printf("Waiting forever\n");
+	// 	while(1) {
+	// 		sleep_ms(50);
+	// 	}
+	// }
+	// // lose state
+	// if(lose_flag) {
+	// 	gpio_put(RED, 1);
+	// 	gpio_put(GREEN, 0);
+	// 	while(1) {
+	// 		sleep_ms(50);
+	// 	}
+	// }
 }
