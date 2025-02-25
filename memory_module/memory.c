@@ -150,18 +150,26 @@ int main() {
 	
 	multicore_launch_core1(max7219_core_code);
 
-	sleep_ms(1000);
+	sleep_ms(10);
 	multicore_fifo_push_blocking_inline(0x09ff); // set decode to all
-	sleep_ms(1000);
+	sleep_ms(10);
 	multicore_fifo_push_blocking_inline(0x0106); // write aa to digit 0
-	sleep_ms(1000);
+	sleep_ms(10);
+	multicore_fifo_push_blocking_inline(0x0205); // write aa to digit 0
+	sleep_ms(10);
+	multicore_fifo_push_blocking_inline(0x0304); // write aa to digit 0
+	sleep_ms(10);
+	multicore_fifo_push_blocking_inline(0x0403); // write aa to digit 0
+	sleep_ms(10);
 	multicore_fifo_push_blocking_inline(0x0a08); // set intensity to something
-	sleep_ms(1000);
-	multicore_fifo_push_blocking_inline(0x0b00); // set to only scan first digit
-	sleep_ms(1000);
+	sleep_ms(10);
+	multicore_fifo_push_blocking_inline(0x0b03); // set to only scan first digit
+	sleep_ms(10);
 	multicore_fifo_push_blocking_inline(0x0c01); // exit shutdown mode
-	sleep_ms(1000);
-	gpio_put(RED, 1);
+	sleep_ms(10);
+	gpio_put(RED, 1);		
+	gpio_put(CHIP_SELECT, 1);
+
 
 
 	/**********************
