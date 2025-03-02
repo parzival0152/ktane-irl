@@ -31,7 +31,7 @@ const uint8_t BAR_RED_PIN = 27;
 const uint8_t BAR_GREEN_PIN = 28;
 const uint8_t BAR_BLUE_PIN = 29;
 
-typedef enum {
+typedef enum : uint8_t {
 	RED = 0,
 	WHITE,
 	BLUE,
@@ -39,7 +39,7 @@ typedef enum {
 	BTN_COLOR_NUM
 } ButtonColors;
 
-typedef enum {
+typedef enum : uint8_t {
 	BAR_RED = 0,
 	BAR_WHITE,
 	BAR_BLUE,
@@ -47,12 +47,12 @@ typedef enum {
 	BAR_COLOR_NUM
 } BarColors;
 
-typedef enum {
+typedef enum : uint8_t {
 	IDLE,
 	OTHER
 } ButtonStates;
 
-typedef enum {
+typedef enum : uint8_t {
 	PRESS = 0,
     ABORT,
     DETONATE,
@@ -61,10 +61,27 @@ typedef enum {
 } ButtonLabels;
 
 const char* const BUTTON_LABELS[] = {
-	"PRESS",
-    "ABORT",
-    "DETONATE",
-    "HOLD"
+	[PRESS] = "PRESS",
+    [ABORT] = "ABORT",
+    [DETONATE] = "DETONATE",
+    [HOLD] = "HOLD"
+};
+
+typedef enum : uint8_t {
+	INVALID_METHOD = 0,
+	RELEASE_HELD_BUTTON,
+	PRESS_IMMEDIATE_RELEASE,
+} WinCheckMethod;
+
+WinCheckMethod WIN_BY_RULE[] = {
+	INVALID_METHOD,
+	RELEASE_HELD_BUTTON,
+	PRESS_IMMEDIATE_RELEASE,
+	RELEASE_HELD_BUTTON,
+	PRESS_IMMEDIATE_RELEASE,
+	RELEASE_HELD_BUTTON,
+	PRESS_IMMEDIATE_RELEASE,
+	RELEASE_HELD_BUTTON,
 };
 
 #endif

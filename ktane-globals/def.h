@@ -24,10 +24,10 @@ enum i2c_master_commands {
 #define INIT_FRAME 1 // The amount of bytes that follow the INIT_INFO command
 
 #define SERIAL_NUMBER_ODD  0x10
-#define SERIAL_NUMEBR_VOWEL 0x20
+#define SERIAL_NUMBER_VOWEL 0x20
 #define LIT_CAR_INDICATOR 0x40
 #define LIT_FRK_INDICATOR 0x80
-#define BATTARY_COUNT_MASK 0x3
+#define BATTERY_COUNT_MASK 0x3
 
 const uint8_t MAX_BATTERIES = 10;
 

@@ -20,12 +20,12 @@ void SSD1306_send_cmd(uint8_t cmd) {
     i2c_write_blocking(PERIPHERAL_I2C, SSD1306_I2C_ADDR, buf, 2, false);
 }
 
-void SSD1306_send_cmd_list(uint8_t *buf, int num) {
-    for (int i=0;i<num;i++)
+void SSD1306_send_cmd_list(const uint8_t buf[], int num) {
+    for (int i=0; i < num; i++)
         SSD1306_send_cmd(buf[i]);
 }
 
-void SSD1306_send_buf(uint8_t buf[], int buflen) {
+void SSD1306_send_buf(const uint8_t buf[], int buflen) {
     // in horizontal addressing mode, the column address pointer auto-increments
     // and then wraps around to the next page, so we can send the entire frame
     // buffer in one gooooooo!
@@ -111,7 +111,7 @@ static inline int GetFontIndex(uint8_t ch) {
     else return 0; // Not got that char so space.
 }
 
-static void WriteChar(uint8_t *buf, uint16_t x, uint16_t y, uint8_t ch) {
+static void WriteChar(uint8_t buf[], uint16_t x, uint16_t y, uint8_t ch) {
     if (x > SSD1306_WIDTH - FONT_CHAR_WIDTH || y > SSD1306_HEIGHT - FONT_CHAR_HEIGHT)
         return;
 
@@ -145,7 +145,7 @@ static void WriteChar(uint8_t *buf, uint16_t x, uint16_t y, uint8_t ch) {
     }
 }
 
-void WriteString(uint8_t *buf, uint16_t x, uint16_t y, const char * str) {
+void write_string(uint8_t buf[], uint16_t x, uint16_t y, const char * str) {
     // Cull out any string off the screen
     if (x > SSD1306_WIDTH - FONT_CHAR_WIDTH || y > SSD1306_HEIGHT - FONT_CHAR_HEIGHT)
         return;
@@ -172,7 +172,7 @@ void SSD1306_scroll(bool on) {
     SSD1306_send_cmd_list(cmds, count_of(cmds));
 }
 
-void render(uint8_t *buf, render_area *area) {
+void render(const uint8_t buf[], const render_area* const area) {
     // update a portion of the display with a render area
     uint8_t cmds[] = {
         SSD1306_SET_COL_ADDR,

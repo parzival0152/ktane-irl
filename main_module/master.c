@@ -131,7 +131,7 @@ void populate_addresses() {
 
 void init_game() {
 	uint8_t random_config = get_rand_32(); // randomize the config
-	random_config = SERIAL_NUMBER_ODD | SERIAL_NUMEBR_VOWEL | LIT_FRK_INDICATOR;
+	random_config = SERIAL_NUMBER_ODD | SERIAL_NUMBER_VOWEL | LIT_FRK_INDICATOR;
 	uint8_t txdata[] = {
 		INIT_INFO,
 		random_config

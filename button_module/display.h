@@ -70,8 +70,8 @@ typedef struct {
 } render_area;
 
 void SSD1306_init();
-void WriteString(uint8_t *buf, uint16_t x, uint16_t y, const char *str);
-void render(uint8_t *buf, render_area *area);
+void write_string(uint8_t buf[], uint16_t x, uint16_t y, const char *str);
+void render(const uint8_t buf[], const render_area* const area);
 void calc_render_area_buflen(render_area *area);
 
 #endif
